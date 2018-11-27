@@ -1,9 +1,6 @@
 pragma solidity ^0.4.24;
 
 import "./lib/Decoder.sol";
-// TODO: Add Zeppelin solidity
-// TODO: Write Truffle test for current code
-// Inspired by article written by Colony: https://blog.colony.io/towards-better-ethereum-voting-protocols-7e54cb5a0119/#.30b4usja3
 
 contract CommitRevealVote {
   using Decoder for Decoder;
@@ -22,6 +19,7 @@ contract CommitRevealVote {
   
   struct Vote {
     string name;
+    // Vote options could easily be dynamic implementing arrays
     bytes32[] options;
     uint[] votes;
     uint commitEnds;
@@ -34,8 +32,8 @@ contract CommitRevealVote {
   uint[] votesArr;
   
   constructor() public {
-    userBalances[address(0x7E23ceCe666fc9C96B3afd1D1a9886b6D6B7e621)] = User(100, 0);
-    userBalances[address(0x7f88254273Ea3c092c9bA0e147753331a641E9aA)] = User(100, 0);
+      userBalances[address(0x7E23ceCe666fc9C96B3afd1D1a9886b6D6B7e621)] = User(100, 0);
+      userBalances[address(0x7f88254273Ea3c092c9bA0e147753331a641E9aA)] = User(100, 0);
   }
 
   // Example: "EveryDapp", ["0x00", "0x01"], 2043328814, 2123328814
@@ -45,8 +43,8 @@ contract CommitRevealVote {
     uint _commitEnds,
     uint _revealEnds
   ) public {
-    require(_commitEnds > now + 60 * 60 * 24, "commit time should atleast be one day from now"); // Atleast have the commit 1 day from now
-    require(_commitEnds > now + 60 * 60 * 48, "reveal time should atleast be one day after commit"); // Atleast have 1 day to reveal after that
+    // require(_commitEnds > now + 60 * 60 * 24, "commit time should atleast be one day from now"); // Atleast have the commit 1 day from now
+    // require(_commitEnds > now + 60 * 60 * 48, "reveal time should atleast be one day after commit"); // Atleast have 1 day to reveal after that
 
     votes[votesArr.length] = Vote(
       _name, 
@@ -59,7 +57,7 @@ contract CommitRevealVote {
     
     for(uint i = 0; i < _options.length; i++) {
       votes[votesArr.length].options.push(_options[i]);
-      votes[votesArr.length].options.push(0);
+      votes[votesArr.length].votes.push(0);
     }
     
     votesArr.push(votesArr.length);
@@ -82,8 +80,8 @@ contract CommitRevealVote {
     uint _voteId,
     bytes _vote
   ) public {
-    // require(votes[_voteId].commitEnds < now, "Commit stage is still in progress");
-    // require(votes[_voteId].revealEnds > now, "Voting stage has ended");
+    require(votes[_voteId].commitEnds < now, "Commit stage is still in progress");
+    require(votes[_voteId].revealEnds > now, "Voting stage has ended");
     require(keccak256(_vote) == userBalances[msg.sender].userCommits[_voteId].secret, "wrong vote claim");
     require(!userBalances[msg.sender].userCommits[_voteId].revealed, "User has already revealed");
 
@@ -108,7 +106,7 @@ contract CommitRevealVote {
   public 
   returns(bytes32) {
     require(!votes[_voteId].ended);
-    // require(votes[_voteId].revealEnds < now);
+    require(votes[_voteId].revealEnds < now);
     uint winner;
     for (uint i = 0; i < votes[_voteId].options.length; i++) {
       if (votes[_voteId].votes[i] > winner) {
