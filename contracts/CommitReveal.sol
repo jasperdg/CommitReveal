@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "./lib/Decoder.sol";
 // TODO: Add Zeppelin solidity
 // TODO: Write Truffle test for current code
-// Based on theory written by Colony: https://blog.colony.io/towards-better-ethereum-voting-protocols-7e54cb5a0119/#.30b4usja3
+// Inspired by article written by Colony: https://blog.colony.io/towards-better-ethereum-voting-protocols-7e54cb5a0119/#.30b4usja3
 
 contract CommitRevealVote {
   using Decoder for Decoder;
