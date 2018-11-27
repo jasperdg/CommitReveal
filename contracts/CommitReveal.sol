@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./lib/Decoder.sol";
+import "./Decoder.sol";
 
 contract CommitRevealVote {
   using Decoder for Decoder;
@@ -20,7 +20,7 @@ contract CommitRevealVote {
   struct Vote {
     string name;
     // Vote options could easily be dynamic implementing arrays
-    string[] options;
+    bytes32[] options;
     uint[] votes;
     uint commitEnds;
     uint revealEnds;
@@ -29,47 +29,33 @@ contract CommitRevealVote {
   
   mapping (address => User) userBalances;
   mapping (uint => Vote) votes;
+  uint[] votesArr;
 
-  constructor() 
-  public {
-    // One day:
-      // uint commitEnds = now + 60 * 60 * 24; // One day for the example, pass as parameter in the future
-  // uint revealEnds = commitEnds + 60 * 60 * 24; // One day for the example, pass as parameter in the future
+  // Example: "EveryDapp", ["0x00", "0x01"], 2043328814, 2123328814
+  function addVote(
+    string _name, 
+    bytes32[] _options,
+    uint _commitEnds,
+    uint _revealEnds
+  ) public {
+    require(_commitEnds > now + 60 * 60 * 24, "commit time should atleast be one day from now"); // Atleast have the commit 1 day from now
+    require(_commitEnds > now + 60 * 60 * 48, "reveal time should atleast be one day after commit"); // Atleast have 1 day to reveal after that
 
-    // One minute for development
-    uint commitEnds = now + 10 seconds; // One Minute for the example, pass as parameter in the future
-    uint revealEnds = commitEnds + 10 seconds; // One Minute for the example, pass as parameter in the future
-      
-    // Set some initial data
-    votes[0] = Vote(
-      "EveryDapp", 
-      new string[](0), 
+    votes[votesArr.length] = Vote(
+      _name, 
+      new bytes32[](0), 
       new uint[](0), 
-      commitEnds, 
-      revealEnds, 
-      false
-    );
-    votes[1] = Vote(
-      "ETH", 
-      new string[](0), 
-      new uint[](0), 
-      commitEnds, 
-      revealEnds, 
+      _commitEnds, 
+      _revealEnds, 
       false
     );
     
-    votes[0].options.push("no");
-    votes[0].options.push("yes");
-    votes[0].votes.push(0);
-    votes[0].votes.push(0);
+    for(uint i = 0; i < _options.length; i++) {
+      votes[votesArr.length].options.push(_options[i]);
+      votes[votesArr.length].options.push(0);
+    }
     
-    votes[1].options.push("no");
-    votes[1].options.push("yes");
-    votes[1].votes.push(0);
-    votes[1].votes.push(0);
-    
-    userBalances[msg.sender] = User(100, 0);
-    userBalances[address(0x14723a09acff6d2a60dcdf7aa4aff308fddc160c00)] = User(100, 0);
+    votesArr.push(votesArr.length);
   }
   
   // Example: 0, 0x63187ec60a67cd31ea7056a075f212643363da65bc07cbae5615aa8f06ae99e9
@@ -77,19 +63,20 @@ contract CommitRevealVote {
     uint _voteId, 
     bytes32 _commitSecret
   ) public {
-    require(votes[_voteId].commitEnds > now, "Commit stage is done");
+    // require(votes[_voteId].commitEnds > now, "Commit stage is done");
     require(!userBalances[msg.sender].userCommits[_voteId].voted, "User has already participated in this vote");
-    userBalances[msg.sender].userCommits[_voteId] = Commit(_commitSecret, true);
+    userBalances[msg.sender].userCommits[_voteId] = Commit(_commitSecret, true, false);
     userBalances[msg.sender].userCommits[_voteId].voted = true;
   }
+  
   
   // Example: 0, 0x010000000000000000000000000000000000000000000000000000000000000014
   function reveal(
     uint _voteId,
     bytes _vote
   ) public {
-    require(votes[_voteId].commitEnds < now, "Commit stage is still in progress");
-    require(votes[_voteId].revealEnds > now, "Voting stage has ended");
+    // require(votes[_voteId].commitEnds < now, "Commit stage is still in progress");
+    // require(votes[_voteId].revealEnds > now, "Voting stage has ended");
     require(keccak256(_vote) == userBalances[msg.sender].userCommits[_voteId].secret, "wrong vote claim");
     require(!userBalances[msg.sender].userCommits[_voteId].revealed, "User has already revealed");
 
@@ -112,7 +99,7 @@ contract CommitRevealVote {
     uint _voteId
   ) 
   public 
-  returns(string) {
+  returns(bytes32) {
     require(!votes[_voteId].ended);
     // require(votes[_voteId].revealEnds < now);
     uint winner;
