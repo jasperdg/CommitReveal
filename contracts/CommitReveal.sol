@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./Decoder.sol";
+import "./lib/Decoder.sol";
 
 contract CommitRevealVote {
   using Decoder for Decoder;
@@ -19,7 +19,6 @@ contract CommitRevealVote {
   
   struct Vote {
     string name;
-    // Vote options could easily be dynamic implementing arrays
     bytes32[] options;
     uint[] votes;
     uint commitEnds;
@@ -30,6 +29,11 @@ contract CommitRevealVote {
   mapping (address => User) userBalances;
   mapping (uint => Vote) votes;
   uint[] votesArr;
+  
+  constructor() public {
+    userBalances[address(0x7E23ceCe666fc9C96B3afd1D1a9886b6D6B7e621)] = User(100, 0);
+    userBalances[address(0x7f88254273Ea3c092c9bA0e147753331a641E9aA)] = User(100, 0);
+  }
 
   // Example: "EveryDapp", ["0x00", "0x01"], 2043328814, 2123328814
   function addVote(
